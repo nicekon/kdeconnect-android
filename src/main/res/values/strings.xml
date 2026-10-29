@@ -677,4 +677,5 @@ SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only OR LicenseRef-KDE-Accepted
     <string name="share_background_link_permission_required">Allow Display over other apps in Android settings to open received links without tapping a notification.</string>
     <string name="share_background_link_permission_granted">Display over other apps is allowed. Enable Open received links immediately to use it.</string>
     <string name="share_background_link_permission_unavailable">Open Android app settings and allow Display over other apps for KDE Connect Kon.</string>
+    <string name="share_invalid_file_permission">Cannot share this file. Select it again in the sending app and allow file access.</string>
 </resources>

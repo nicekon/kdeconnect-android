@@ -154,6 +154,11 @@ class ShareActivity : BaseActivity<ActivityShareBinding>() {
         super.onStart()
 
         val intent = intent
+        if (!ExternalShareValidator.isValid(this, intent)) {
+            Toast.makeText(this, R.string.share_invalid_file_permission, Toast.LENGTH_LONG).show()
+            finish()
+            return
+        }
         var deviceId = intent.getStringExtra(EXTRA_DEVICE_ID)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && deviceId == null) {
             deviceId = intent.getStringExtra(Intent.EXTRA_SHORTCUT_ID)

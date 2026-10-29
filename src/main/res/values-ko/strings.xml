@@ -481,4 +481,5 @@
     <string name="share_background_link_permission_required">알림을 누르지 않고 링크를 열려면 Android 설정에서 다른 앱 위에 표시를 허용하세요.</string>
     <string name="share_background_link_permission_granted">다른 앱 위에 표시가 허용되었습니다. 받은 링크 바로 열기 옵션을 켜면 사용할 수 있습니다.</string>
     <string name="share_background_link_permission_unavailable">Android 앱 설정에서 KDE Connect Kon의 다른 앱 위에 표시를 허용하세요.</string>
+    <string name="share_invalid_file_permission">이 파일을 공유할 수 없습니다. 보내는 앱에서 파일을 다시 선택하고 파일 접근을 허용해 주세요.</string>
 </resources>

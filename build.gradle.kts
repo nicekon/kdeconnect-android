@@ -7,6 +7,7 @@ import com.github.jk1.license.LicenseReportExtension
 import com.github.jk1.license.render.ReportRenderer
 import com.github.jk1.license.render.TextReportRenderer
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
 import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes.CHECKCAST
@@ -28,6 +29,18 @@ plugins {
 }
 
 val licenseResDir = "$projectDir/build/dependency-license-res"
+
+// Only a caller-selected local file may supply private release signing credentials.
+val konSigningPropertiesFile = providers.gradleProperty("konSigningPropertiesFile").orNull?.let { file(it) }
+val konSigningProperties = Properties().apply {
+    konSigningPropertiesFile?.let { selected ->
+        require(selected.isFile) { "The private release signing properties file does not exist." }
+        selected.inputStream().use { load(it) }
+        listOf("storeFile", "storePassword", "keyAlias", "keyPassword").forEach { name ->
+            require(!getProperty(name).isNullOrBlank()) { "Missing release signing property: $name" }
+        }
+    }
+}
 
 kotlin {
     compilerOptions {
@@ -74,6 +87,14 @@ android {
         }
     }
     signingConfigs {
+        create("konRelease") {
+            if (konSigningPropertiesFile != null) {
+                storeFile = file(konSigningProperties.getProperty("storeFile"))
+                storePassword = konSigningProperties.getProperty("storePassword")
+                keyAlias = konSigningProperties.getProperty("keyAlias")
+                keyPassword = konSigningProperties.getProperty("keyPassword")
+            }
+        }
         getByName("debug") {
             storeFile = file("debug.keystore")
             storePassword = "android"
@@ -90,8 +111,12 @@ android {
             versionNameSuffix = "-debug"
         }
         getByName("release") {
+            isDebuggable = false
             isMinifyEnabled = true
             isShrinkResources = true
+            applicationIdSuffix = ".kon"
+            versionNameSuffix = "-kon"
+            signingConfig = signingConfigs.getByName("konRelease")
         }
     }
     lint {
@@ -348,4 +373,13 @@ tasks.named("generateLicenseReport") {
 
 tasks.named("preBuild") {
     dependsOn("generateLicenseReport")
+}
+
+// Fail closed instead of silently publishing an unsigned or debug-signed release.
+tasks.matching { it.name == "validateSigningRelease" }.configureEach {
+    doFirst {
+        check(konSigningPropertiesFile != null) {
+            "Release signing requires -PkonSigningPropertiesFile=<private local properties file>."
+        }
+    }
 }

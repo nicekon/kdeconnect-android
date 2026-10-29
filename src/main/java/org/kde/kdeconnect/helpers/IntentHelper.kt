@@ -28,21 +28,23 @@ object IntentHelper {
     /**
      * On API 29+: retain a notification and optionally request a permitted direct launch.
      * A direct request retains only a quiet recovery notification because Android may silently reject it.
-     * On API <=28: launch a given Intent directly since no background restrictions apply on these platforms.
+     * On API <=28: launch directly unless the caller requires explicit user interaction.
      * @param context the Context from which the Intent is started
      * @param intent the Intent to be started
      * @param title a title which is shown in the notification on Android 10+
      * @param allowBackgroundLaunch opt in to direct launch when overlay permission allows it
+     * @param requireUserInteraction always require a notification tap, including in the foreground
      */
     fun startActivityFromBackgroundOrCreateNotification(
         context: Context,
         intent: Intent,
         title: String,
-        allowBackgroundLaunch: Boolean = false
+        allowBackgroundLaunch: Boolean = false,
+        requireUserInteraction: Boolean = false
     ) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && !isInForeground) {
+        if (requireUserInteraction || (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && !isInForeground)) {
             var notifyQuietly = false
-            if (allowBackgroundLaunch && Settings.canDrawOverlays(context)) {
+            if (!requireUserInteraction && allowBackgroundLaunch && Settings.canDrawOverlays(context)) {
                 try {
                     context.startActivity(intent)
                     notifyQuietly = true
@@ -65,11 +67,15 @@ object IntentHelper {
                 .setAutoCancel(true)
             if (notifyQuietly) {
                 notificationBuilder.setSilent(true)
-            } else {
+            } else if (!requireUserInteraction) {
                 notificationBuilder.setFullScreenIntent(pendingIntent, true)
             }
             val id = SystemClock.elapsedRealtime().toInt()
-            NotificationManagerCompat.from(context).notify(id, notificationBuilder.build())
+            try {
+                NotificationManagerCompat.from(context).notify(id, notificationBuilder.build())
+            } catch (e: SecurityException) {
+                Log.w("IntentHelper", "Cannot post the received-link notification; notification permission is required", e)
+            }
         } else {
             context.startActivity(intent)
         }

@@ -195,7 +195,8 @@ class SharePlugin : Plugin() {
             context,
             browserIntent,
             url,
-            allowBackgroundLaunch = preferences.getBoolean(ShareSettingsFragment.PREFERENCE_OPEN_LINKS_DIRECTLY, false)
+            allowBackgroundLaunch = preferences.getBoolean(ShareSettingsFragment.PREFERENCE_OPEN_LINKS_DIRECTLY, false),
+            requireUserInteraction = browserIntent.data?.scheme.equals("kdeconnect", ignoreCase = true)
         )
     }
 
@@ -273,6 +274,11 @@ class SharePlugin : Plugin() {
     }
 
     fun share(intent: Intent, onComplete: (() -> Unit)? = null) {
+        if (!ExternalShareValidator.isValid(context, intent)) {
+            Log.w(TAG, "Rejected an external share without delegated file access")
+            onComplete?.invoke()
+            return
+        }
         val streams = IntentHelper.streamsFromIntent(intent)
         if (streams.isNotEmpty()) {
             Log.i(TAG, "Intent contains files to share")

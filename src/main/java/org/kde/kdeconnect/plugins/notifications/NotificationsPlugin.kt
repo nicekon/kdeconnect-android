@@ -40,6 +40,7 @@ import org.kde.kdeconnect.plugins.Plugin
 import org.kde.kdeconnect.plugins.PluginFactory.LoadablePlugin
 import org.kde.kdeconnect.ui.PluginSettingsFragment
 import org.kde.kdeconnect.ui.StartActivityAlertDialogFragment
+import org.kde.kdeconnect_tp.BuildConfig
 import org.kde.kdeconnect_tp.R
 import java.io.ByteArrayOutputStream
 import java.security.MessageDigest
@@ -205,7 +206,7 @@ class NotificationsPlugin : Plugin(), NotificationReceiver.NotificationListener 
             }
         }
 
-        if ("org.kde.kdeconnect_tp" == packageName || "org.kde.kdeconnect_tp.debug" == packageName) {
+        if (BuildConfig.APPLICATION_ID == packageName || "org.kde.kdeconnect_tp" == packageName || "org.kde.kdeconnect_tp.debug" == packageName) {
             // Don't send our own notifications
             return
         }

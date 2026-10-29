@@ -9,10 +9,12 @@ import android.content.ContextWrapper
 import android.content.ActivityNotFoundException
 import android.content.res.Resources
 import androidx.preference.PreferenceManager
+import androidx.core.app.NotificationManagerCompat
 import androidx.test.core.app.ApplicationProvider
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.mockkStatic
 import io.mockk.spyk
 import io.mockk.unmockkAll
 import org.junit.After
@@ -203,5 +205,62 @@ class SharePluginTest {
         val notification = received.single()
         assertEquals(deepLink, notification.extras.getString(android.app.Notification.EXTRA_TITLE))
         assertNotNull(notification.contentIntent)
+    }
+
+    private fun assertCommandLinkRequiresTap() {
+        enableDirectLinks()
+        ShadowSettings.setCanDrawOverlays(true)
+        val link = "kdeconnect://runcommand/paired-desktop/command-key"
+        receive(link)
+        assertNull("A received command must wait for user interaction", shadowOf(application).nextStartedActivity)
+        val notification = shadowOf(notifications).allNotifications.single()
+        assertNull("A full-screen intent could execute the command without a tap", notification.fullScreenIntent)
+        notification.contentIntent.send()
+        assertEquals(link, shadowOf(application).nextStartedActivity.dataString)
+    }
+
+    @Test
+    fun receivedCommandRequiresTapEvenWithDirectLinksEnabled() = assertCommandLinkRequiresTap()
+
+    @Test
+    fun receivedCommandRequiresTapEvenInForeground() {
+        every { LifecycleHelper.isInForeground } returns true
+        assertCommandLinkRequiresTap()
+    }
+
+    @Test
+    @Config(sdk = [28])
+    fun receivedCommandRequiresTapOnAndroid9() = assertCommandLinkRequiresTap()
+
+    private fun rejectNotifications() {
+        val manager = mockk<NotificationManagerCompat>()
+        every { manager.notify(any<Int>(), any<android.app.Notification>()) } throws SecurityException("Notification permission denied")
+        mockkStatic(NotificationManagerCompat::class)
+        every { NotificationManagerCompat.from(context) } returns manager
+    }
+
+    @Test
+    fun deniedNotificationPermissionDoesNotLaunchACommandOrEscapeTheHelper() {
+        rejectNotifications()
+        ShadowSettings.setCanDrawOverlays(true)
+        IntentHelper.startActivityFromBackgroundOrCreateNotification(
+            context,
+            Intent(Intent.ACTION_VIEW, android.net.Uri.parse("kdeconnect://runcommand/desktop/key")),
+            "Command link",
+            allowBackgroundLaunch = true,
+            requireUserInteraction = true
+        )
+        assertNull("Denied notifications must not execute the command instead", shadowOf(application).nextStartedActivity)
+    }
+
+    @Test
+    fun deniedNotificationPermissionDoesNotLaunchAnOptedOutLinkOrEscapeTheHelper() {
+        rejectNotifications()
+        IntentHelper.startActivityFromBackgroundOrCreateNotification(
+            context,
+            Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url)),
+            url
+        )
+        assertNull(shadowOf(application).nextStartedActivity)
     }
 }

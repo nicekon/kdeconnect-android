@@ -1,0 +1,9 @@
+# Private signed release and bounded security audit
+
+User request: review code and permissions, then rebuild an installable release APK signed with a dedicated private key. Preserve existing KDE Connect features; permission review does not authorize stripping SMS, accessibility, notification or file-sharing features. Samsung's classifier reason is unknown and signing alone is not a promise of acceptance.
+
+Review custom changes and relevant upstream network authentication, external intents, file URIs, widget requests, dependencies and merged manifest. Fix confirmed trust-boundary bugs without bypassing security checks. Require delegated content-URI read access for external file shares, make internal command widget broadcasts non-exported, and retain explicit user interaction for KDE Connect command links received as URL shares. Preserve ordinary Notion/web links and internal file pickers. Replace the hardcoded original FileProvider authority when packaging a distinct fork.
+
+Use a personal fork application ID `org.kde.kdeconnect_tp.kon` and label KDE Connect Kon for release, allowing coexistence with official KDE Connect. Keep release non-debuggable with upstream shrinking. Load signing properties only from an explicit private local file; do not fall back to the public debug keystore. Generate/reuse a dedicated RSA private key outside the repository in a mode-0700 directory, with mode-0600 key/properties files. Never print passwords, commit keys or upload the APK to a scanner without a separate user request.
+
+Verify regression tests, full unit suite, lint, merged permissions, exported component policy, release debuggable state, certificate fingerprint distinct from the upstream debug key, and APK signature. Document review limits and retained powerful permissions; provide APK plus SHA-256 and public certificate. Do not install on the phone or disable its protection as part of this request.

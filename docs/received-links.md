@@ -4,28 +4,30 @@ This fork adds an opt-in for immediately opening URLs received through KDE Conne
 
 ## Install and enable
 
-1. Install the debug APK. It uses `org.kde.kdeconnect_tp.debug`, so the official KDE Connect installation can remain installed. The test app is named **KDE Connect Kon**.
+1. Install the private release APK. It uses `org.kde.kdeconnect_tp.kon`, so the official KDE Connect installation can remain installed. The personal fork is named **KDE Connect Kon**. It is separate from the earlier debug package and requires its own pairing.
 2. Open KDE Connect Kon and pair it with the Mac. It has separate app data and needs its own pairing and permissions.
 3. In the sharing plugin settings, enable **Open received links immediately**.
 4. On Android 10 and newer, select **Allow opening links in the background** and explicitly allow **Display over other apps** in Android settings.
 5. Unlock the phone, put KDE Connect Kon in the background, copy a Notion URL on the Mac, then choose the phone's **Open Clipboard Link** menu in Soduto.
 
-After requesting an immediate launch, a silent notification retains the URL for recovery because Android may reject a background launch without returning an error. A successfully opened app does not require tapping this notification. Without the opt-in or required permission, the existing tap-to-open notification remains. Foreground behavior and unrelated plugins are unchanged. Android and manufacturer policies may still restrict launches; this does not bypass the lockscreen. Android 9 and older retain the existing direct-launch behavior.
+After requesting an immediate launch, a silent notification retains the URL for recovery because Android may reject a background launch without returning an error. A successfully opened app does not require tapping this notification. Without the opt-in or required permission, the existing tap-to-open notification remains. Ordinary links retain the previous foreground and Android 9 behavior. Received `kdeconnect:` links always require a notification tap, so a link cannot silently trigger this app’s remote-command handler. Android and manufacturer policies may still restrict launches; this does not bypass the lockscreen.
 
 ## Build and verify
 
 Use JDK 21 and Android SDK platform 37 (matching upstream). Configure `local.properties` with your SDK location, then run:
 
 ```sh
-./gradlew testDebugUnitTest
-./gradlew assembleDebug
+./gradlew testDebugUnitTest lintRelease assembleRelease \
+  -PkonSigningPropertiesFile="/absolute/private/release-signing.properties"
 ```
 
-The APK is written to `build/outputs/apk/debug/kdeconnect-android-debug.apk`. It uses the upstream debug keystore and is for local testing, not store publication. Do not commit local SDK paths, private release signing keys or build outputs.
+The APK is written to `build/outputs/apk/release/kdeconnect-android-release.apk`. The caller-selected private properties file must define `storeFile`, `storePassword`, `keyAlias`, and `keyPassword`. Keep it and the keystore outside Git; release signing fails if no file is supplied. Back up both securely and keep using the same key for future updates. Debug builds still use the public upstream debug key and must not be distributed as release builds. Do not commit local SDK paths, signing secrets or build outputs.
 
-Source: https://github.com/nicekon/kdeconnect-android/tree/codex/open-received-links
+Retained permissions and the bounded security review are documented in [private-release-audit.md](private-release-audit.md). A private signature identifies this build; it does not certify that a phone security service will accept it.
 
-## Verification (2026-10-29)
+Source: https://github.com/nicekon/kdeconnect-android/tree/codex/release-audit
+
+## Previous debug verification (2026-10-29)
 
 - Full JVM unit suite: 141 tests, 0 failures/errors, including 10 received-link behavior tests.
 - Debug APK build: successful; APK Signature Scheme v1 and v2 verified.

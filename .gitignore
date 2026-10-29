@@ -15,3 +15,10 @@ local.properties
 GPUCache/
 /release/
 /.kotlin/
+
+# Private release signing material must never enter the repository.
+*.p12
+*.jks
+release-signing.properties
+signing.properties
+keystore.properties
