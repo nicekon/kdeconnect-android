@@ -7,9 +7,13 @@
 package org.kde.kdeconnect.plugins.share
 
 import android.content.Context
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.os.Build
+import android.provider.Settings
+import android.widget.Toast
 import android.os.Environment
 import android.util.Log
 import androidx.activity.result.contract.ActivityResultContracts
@@ -18,6 +22,7 @@ import androidx.preference.Preference
 import androidx.preference.PreferenceManager
 import androidx.preference.SwitchPreference
 import org.kde.kdeconnect.ui.PluginSettingsFragment
+import org.kde.kdeconnect_tp.R
 import java.io.File
 import androidx.core.content.edit
 import androidx.core.net.toUri
@@ -25,6 +30,7 @@ import androidx.core.net.toUri
 class ShareSettingsFragment : PluginSettingsFragment() {
 
     private lateinit var filePicker: Preference
+    private lateinit var backgroundLinkPermission: Preference
 
     private val openDocumentTreeLauncher = registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         if (uri != null) {
@@ -39,6 +45,19 @@ class ShareSettingsFragment : PluginSettingsFragment() {
         val preferenceScreen = preferenceScreen
         val customDownloads = preferenceScreen.findPreference<SwitchPreference>("share_destination_custom")!!
         filePicker = preferenceScreen.findPreference("share_destination_folder_preference")!!
+        val openLinks = preferenceScreen.findPreference<SwitchPreference>(PREFERENCE_OPEN_LINKS_DIRECTLY)!!
+        backgroundLinkPermission = preferenceScreen.findPreference("share_background_link_permission")!!
+        openLinks.setOnPreferenceChangeListener { _, newValue ->
+            if (newValue == true && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+                !Settings.canDrawOverlays(requireContext())) {
+                openBackgroundLinkPermissionSettings()
+            }
+            true
+        }
+        backgroundLinkPermission.setOnPreferenceClickListener {
+            openBackgroundLinkPermissionSettings()
+            true
+        }
 
         customDownloads.setOnPreferenceChangeListener { _, newValue ->
             updateFilePickerStatus(newValue as Boolean)
@@ -56,6 +75,25 @@ class ShareSettingsFragment : PluginSettingsFragment() {
         updateFilePickerStatus(customized)
     }
 
+    override fun onResume() {
+        super.onResume()
+        backgroundLinkPermission.isVisible = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+        backgroundLinkPermission.setSummary(
+            if (Settings.canDrawOverlays(requireContext())) R.string.share_background_link_permission_granted
+            else R.string.share_background_link_permission_required
+        )
+    }
+
+    private fun openBackgroundLinkPermissionSettings() {
+        val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+            "package:${requireContext().packageName}".toUri())
+        try {
+            startActivity(intent)
+        } catch (e: ActivityNotFoundException) {
+            Toast.makeText(requireContext(), R.string.share_background_link_permission_unavailable, Toast.LENGTH_LONG).show()
+        }
+    }
+
     private fun updateFilePickerStatus(enabled: Boolean) {
         filePicker.isEnabled = enabled
         val path = PreferenceManager
@@ -70,6 +108,7 @@ class ShareSettingsFragment : PluginSettingsFragment() {
     }
 
     companion object {
+        const val PREFERENCE_OPEN_LINKS_DIRECTLY = "share_open_links_directly"
         private const val PREFERENCE_CUSTOMIZE_DESTINATION = "share_destination_custom"
         private const val PREFERENCE_DESTINATION = "share_destination_folder_uri"
 

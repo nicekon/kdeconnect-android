@@ -13,6 +13,8 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.SystemClock
+import android.provider.Settings
+import android.util.Log
 import android.webkit.URLUtil
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -23,14 +25,28 @@ import org.kde.kdeconnect_tp.R
 
 object IntentHelper {
     /**
-     * On API 29+: post a high priority notification which starts the given Intent when clicked
+     * On API 29+: post a notification unless the caller opts in to a permitted direct launch.
      * On API <=28: launch a given Intent directly since no background restrictions apply on these platforms.
      * @param context the Context from which the Intent is started
      * @param intent the Intent to be started
      * @param title a title which is shown in the notification on Android 10+
+     * @param allowBackgroundLaunch opt in to direct launch when overlay permission allows it
      */
-    fun startActivityFromBackgroundOrCreateNotification(context: Context, intent: Intent, title: String) {
+    fun startActivityFromBackgroundOrCreateNotification(
+        context: Context,
+        intent: Intent,
+        title: String,
+        allowBackgroundLaunch: Boolean = false
+    ) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && !isInForeground) {
+            if (allowBackgroundLaunch && Settings.canDrawOverlays(context)) {
+                try {
+                    context.startActivity(intent)
+                    return
+                } catch (e: SecurityException) {
+                    Log.w("IntentHelper", "Direct activity launch rejected; showing a notification", e)
+                }
+            }
             val flags = PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
             val pendingIntent = PendingIntent.getActivity(context, 0, intent, flags)
             val notification = NotificationCompat.Builder(context, NotificationHelper.Channels.HIGHPRIORITY)

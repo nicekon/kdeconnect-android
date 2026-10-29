@@ -191,7 +191,12 @@ class SharePlugin : Plugin() {
         Log.i(TAG, "hasUrl: $url")
         val browserIntent = Intent(Intent.ACTION_VIEW, url.toUri())
         browserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        startActivityFromBackgroundOrCreateNotification(context, browserIntent, url)
+        startActivityFromBackgroundOrCreateNotification(
+            context,
+            browserIntent,
+            url,
+            allowBackgroundLaunch = preferences.getBoolean(ShareSettingsFragment.PREFERENCE_OPEN_LINKS_DIRECTLY, false)
+        )
     }
 
     private fun receiveText(np: NetworkPacket) {

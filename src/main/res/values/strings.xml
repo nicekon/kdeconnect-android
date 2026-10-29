@@ -671,4 +671,10 @@ SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only OR LicenseRef-KDE-Accepted
     <string name="pref_mpris_volume_control_summary">Control the connected device\'s media volume using this phone\'s hardware buttons</string>
 
     <string name="pref_notification_screen_off_key" translatable="false">pref_notification_screen_off</string>
+    <string name="share_open_links_directly">Open received links immediately</string>
+    <string name="share_open_links_directly_summary">Open links from paired devices in their associated apps. Android 10 and newer require Display over other apps permission; otherwise, tap the notification to open the link.</string>
+    <string name="share_background_link_permission">Allow opening links in the background</string>
+    <string name="share_background_link_permission_required">Allow Display over other apps in Android settings to open received links without tapping a notification.</string>
+    <string name="share_background_link_permission_granted">Display over other apps is allowed. Enable Open received links immediately to use it.</string>
+    <string name="share_background_link_permission_unavailable">Open Android app settings and allow Display over other apps for KDE Connect Kon.</string>
 </resources>

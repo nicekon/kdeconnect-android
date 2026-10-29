@@ -13,6 +13,17 @@ SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only OR LicenseRef-KDE-Accepted
     tools:keep="@xml/shareplugin_preferences">
 
     <SwitchPreference
+        android:defaultValue="false"
+        android:key="share_open_links_directly"
+        android:summary="@string/share_open_links_directly_summary"
+        android:title="@string/share_open_links_directly" />
+
+    <Preference
+        android:key="share_background_link_permission"
+        android:summary="@string/share_background_link_permission_required"
+        android:title="@string/share_background_link_permission" />
+
+    <SwitchPreference
         android:id="@+id/share_destination_customize"
         android:defaultValue="false"
         android:key="share_destination_custom"
