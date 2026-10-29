@@ -8,6 +8,7 @@ package org.kde.kdeconnect.helpers
 
 import android.app.PendingIntent
 import android.content.ClipDescription
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -25,7 +26,8 @@ import org.kde.kdeconnect_tp.R
 
 object IntentHelper {
     /**
-     * On API 29+: post a notification unless the caller opts in to a permitted direct launch.
+     * On API 29+: retain a notification and optionally request a permitted direct launch.
+     * A direct request retains only a quiet recovery notification because Android may silently reject it.
      * On API <=28: launch a given Intent directly since no background restrictions apply on these platforms.
      * @param context the Context from which the Intent is started
      * @param intent the Intent to be started
@@ -39,27 +41,35 @@ object IntentHelper {
         allowBackgroundLaunch: Boolean = false
     ) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && !isInForeground) {
+            var notifyQuietly = false
             if (allowBackgroundLaunch && Settings.canDrawOverlays(context)) {
                 try {
                     context.startActivity(intent)
-                    return
+                    notifyQuietly = true
                 } catch (e: SecurityException) {
                     Log.w("IntentHelper", "Direct activity launch rejected; showing a notification", e)
+                } catch (e: ActivityNotFoundException) {
+                    Log.w("IntentHelper", "No activity handles the received link; retaining a notification", e)
                 }
             }
             val flags = PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
             val pendingIntent = PendingIntent.getActivity(context, 0, intent, flags)
-            val notification = NotificationCompat.Builder(context, NotificationHelper.Channels.HIGHPRIORITY)
+            // Android can silently reject a startActivity request. Retain the URL for recovery.
+            val channel = if (notifyQuietly) NotificationHelper.Channels.DEFAULT else NotificationHelper.Channels.HIGHPRIORITY
+            val notificationBuilder = NotificationCompat.Builder(context, channel)
                 .setContentIntent(pendingIntent)
-                .setFullScreenIntent(pendingIntent, true)
                 .setContentTitle(title)
                 .setContentText(context.getString(R.string.tap_to_open))
                 .setSmallIcon(R.drawable.ic_notification)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setPriority(if (notifyQuietly) NotificationCompat.PRIORITY_LOW else NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true)
-                .build()
+            if (notifyQuietly) {
+                notificationBuilder.setSilent(true)
+            } else {
+                notificationBuilder.setFullScreenIntent(pendingIntent, true)
+            }
             val id = SystemClock.elapsedRealtime().toInt()
-            NotificationManagerCompat.from(context).notify(id, notification)
+            NotificationManagerCompat.from(context).notify(id, notificationBuilder.build())
         } else {
             context.startActivity(intent)
         }

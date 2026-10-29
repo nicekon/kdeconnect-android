@@ -10,7 +10,7 @@ This fork adds an opt-in for immediately opening URLs received through KDE Conne
 4. On Android 10 and newer, select **Allow opening links in the background** and explicitly allow **Display over other apps** in Android settings.
 5. Unlock the phone, put KDE Connect Kon in the background, copy a Notion URL on the Mac, then choose the phone's **Open Clipboard Link** menu in Soduto.
 
-Without the opt-in or required permission, the existing tap-to-open notification remains. Foreground behavior and unrelated plugins are unchanged. Android and manufacturer policies may still restrict launches; this does not bypass the lockscreen. Android 9 and older retain the existing direct-launch behavior.
+After requesting an immediate launch, a silent notification retains the URL for recovery because Android may reject a background launch without returning an error. A successfully opened app does not require tapping this notification. Without the opt-in or required permission, the existing tap-to-open notification remains. Foreground behavior and unrelated plugins are unchanged. Android and manufacturer policies may still restrict launches; this does not bypass the lockscreen. Android 9 and older retain the existing direct-launch behavior.
 
 ## Build and verify
 
@@ -24,3 +24,11 @@ Use JDK 21 and Android SDK platform 37 (matching upstream). Configure `local.pro
 The APK is written to `build/outputs/apk/debug/kdeconnect-android-debug.apk`. It uses the upstream debug keystore and is for local testing, not store publication. Do not commit local SDK paths, private release signing keys or build outputs.
 
 Source: https://github.com/nicekon/kdeconnect-android/tree/codex/open-received-links
+
+## Verification (2026-10-29)
+
+- Full JVM unit suite: 141 tests, 0 failures/errors, including 10 received-link behavior tests.
+- Debug APK build: successful; APK Signature Scheme v1 and v2 verified.
+- Package: `org.kde.kdeconnect_tp.debug`; version `1.37.0-debug`; minSdk 23; targetSdk 37.
+- Independent review findings addressed: preserve a quiet recovery notification when Android silently ignores a launch; preserve links when no activity handles a deep link.
+- Actual Notion/OEM behavior on the intended phone remains unverified. The USB-connected Android 9 LG V30 did not have KDE Connect or Notion installed and was not used as evidence for the intended phone.

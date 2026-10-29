@@ -33,8 +33,8 @@
 ### Task 2: APK and handoff
 **Files:** debug app labels, docs/received-links.md, build outputs (not committed).
 **Interfaces:** debug variant org.kde.kdeconnect_tp.debug, signed installable APK.
-- [ ] Rename debug label KDE Connect Kon and write setup/build instructions.
-- [ ] Build assembleDebug, verify APK signature, application ID and permissions.
-- [ ] Review whole branch; fix important findings with regression tests.
-- [ ] Commit and push branch to user's fork; deliver APK and source links.
-- [ ] Verify Codex project registration or report the one manual step still needed.
+- [x] Rename debug label KDE Connect Kon and write setup/build instructions.
+- [x] Build assembleDebug, verify APK signature, application ID and permissions.
+- [x] Review whole branch; fix important findings with regression tests.
+- [x] Commit and push branch to user's fork; deliver APK and source links.
+- [x] Verify Codex project registration or report the one manual step still needed.

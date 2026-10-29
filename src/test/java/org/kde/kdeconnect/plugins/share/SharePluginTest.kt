@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.content.Intent
 import android.content.Context
 import android.content.ContextWrapper
+import android.content.ActivityNotFoundException
 import android.content.res.Resources
 import androidx.preference.PreferenceManager
 import androidx.test.core.app.ApplicationProvider
@@ -52,6 +53,7 @@ class SharePluginTest {
         PreferenceManager.getDefaultSharedPreferences(context).edit().clear().commit()
         notifications = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notifications.createNotificationChannel(NotificationChannel(NotificationHelper.Channels.HIGHPRIORITY, "Links", NotificationManager.IMPORTANCE_HIGH))
+        notifications.createNotificationChannel(NotificationChannel(NotificationHelper.Channels.DEFAULT, "Received links", NotificationManager.IMPORTANCE_DEFAULT))
         mockkObject(LifecycleHelper)
         every { LifecycleHelper.isInForeground } returns false
         ShadowSettings.setCanDrawOverlays(false)
@@ -73,7 +75,7 @@ class SharePluginTest {
     }
 
     @Test
-    fun enabledWithOverlayPermissionOpensExactUrlWithoutNotification() {
+    fun enabledWithOverlayPermissionOpensExactUrlAndKeepsQuietRecoveryNotification() {
         enableDirectLinks()
         ShadowSettings.setCanDrawOverlays(true)
         receive()
@@ -82,7 +84,7 @@ class SharePluginTest {
         assertEquals(Intent.ACTION_VIEW, started.action)
         assertEquals(url, started.dataString)
         assertTrue(started.flags and Intent.FLAG_ACTIVITY_NEW_TASK != 0)
-        assertTrue(shadowOf(notifications).allNotifications.isEmpty())
+        assertQuietRecoveryNotification(url)
     }
 
     @Test
@@ -127,7 +129,8 @@ class SharePluginTest {
         receive(deepLink)
         assertEquals(deepLink, shadowOf(application).nextStartedActivity?.dataString)
         assertEquals(deepLink, shadowOf(application).nextStartedActivity?.dataString)
-        assertTrue(shadowOf(notifications).allNotifications.isEmpty())
+        assertTrue(shadowOf(notifications).allNotifications.isNotEmpty())
+        assertTrue(shadowOf(notifications).allNotifications.all { it.fullScreenIntent == null })
     }
 
     @Test
@@ -136,10 +139,12 @@ class SharePluginTest {
         ShadowSettings.setCanDrawOverlays(true)
         receive()
         assertEquals(url, shadowOf(application).nextStartedActivity?.dataString)
+        notifications.cancelAll()
         ShadowSettings.setCanDrawOverlays(false)
         receive()
         assertNull(shadowOf(application).nextStartedActivity)
         assertEquals(1, shadowOf(notifications).allNotifications.size)
+        assertEquals(NotificationHelper.Channels.HIGHPRIORITY, shadowOf(notifications).allNotifications.single().channelId)
     }
 
     @Test
@@ -155,5 +160,48 @@ class SharePluginTest {
         receive()
         assertNull(shadowOf(application).nextStartedActivity)
         assertEquals(1, shadowOf(notifications).allNotifications.size)
+    }
+
+    private fun assertQuietRecoveryNotification(link: String) {
+        val received = shadowOf(notifications).allNotifications
+        assertEquals("The received link must remain available in a notification", 1, received.size)
+        val notification = received.single()
+        assertEquals(link, notification.extras.getString(android.app.Notification.EXTRA_TITLE))
+        assertNotNull(notification.contentIntent)
+        assertNull(notification.fullScreenIntent)
+        assertEquals(NotificationHelper.Channels.DEFAULT, notification.channelId)
+    }
+
+    @Test
+    fun silentlyRejectedDirectLaunchKeepsAQuietRecoveryNotification() {
+        enableDirectLinks()
+        ShadowSettings.setCanDrawOverlays(true)
+        val silentContext = object : ContextWrapper(context) {
+            override fun startActivity(intent: Intent) = Unit
+        }
+        plugin.setContext(silentContext, mockk<Device>(relaxed = true))
+        receive()
+        assertNull(shadowOf(application).nextStartedActivity)
+        assertQuietRecoveryNotification(url)
+    }
+
+    @Test
+    fun missingDeepLinkHandlerKeepsTheReceivedLinkInANotification() {
+        enableDirectLinks()
+        ShadowSettings.setCanDrawOverlays(true)
+        val unhandledContext = object : ContextWrapper(context) {
+            override fun startActivity(intent: Intent) {
+                throw ActivityNotFoundException("No app handles this link")
+            }
+        }
+        plugin.setContext(unhandledContext, mockk<Device>(relaxed = true))
+        val deepLink = "notion://www.notion.so/example/Page-0123456789abcdef"
+        receive(deepLink)
+        assertNull(shadowOf(application).nextStartedActivity)
+        val received = shadowOf(notifications).allNotifications
+        assertEquals("The received link must remain available in a notification", 1, received.size)
+        val notification = received.single()
+        assertEquals(deepLink, notification.extras.getString(android.app.Notification.EXTRA_TITLE))
+        assertNotNull(notification.contentIntent)
     }
 }

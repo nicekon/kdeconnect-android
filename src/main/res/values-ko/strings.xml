@@ -476,7 +476,7 @@
   <string name="pref_mpris_volume_control_title">하드웨어 음량 키</string>
   <string name="pref_mpris_volume_control_summary">연결된 장치의 미디어 음량을 휴대폰의 하드웨어 단추로 제어</string>
     <string name="share_open_links_directly">받은 링크 바로 열기</string>
-    <string name="share_open_links_directly_summary">연결된 기기에서 받은 링크를 연결 앱으로 바로 엽니다. Android 10 이상에서는 다른 앱 위에 표시 권한이 필요하며, 권한이 없으면 알림을 눌러 열 수 있습니다.</string>
+    <string name="share_open_links_directly_summary">연결된 기기에서 받은 링크를 연결 앱으로 바로 엽니다. Android 10 이상에서는 다른 앱 위에 표시 권한이 필요합니다. 앱이 열리지 않을 때 다시 열 수 있도록 조용한 알림을 남깁니다.</string>
     <string name="share_background_link_permission">백그라운드에서 링크 열기 허용</string>
     <string name="share_background_link_permission_required">알림을 누르지 않고 링크를 열려면 Android 설정에서 다른 앱 위에 표시를 허용하세요.</string>
     <string name="share_background_link_permission_granted">다른 앱 위에 표시가 허용되었습니다. 받은 링크 바로 열기 옵션을 켜면 사용할 수 있습니다.</string>
